@@ -1,0 +1,9 @@
+# Cache directories
+__pycache__/
+.cache/
+
+# Environments
+venv/
+.venv/
+.env
+
