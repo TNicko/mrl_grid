@@ -1,33 +1,24 @@
 import gym
+import numpy as np
 from mrl_grid.custom_envs.grid_env import GridEnv
+import mrl_grid.models as model
 
-# Initialize environment
-env = GridEnv(5, 5)
-n_episodes = 10
+# Number of episodes to be run on environment
+N_EPISODES = 10
 
-# Initialize a list to store the rewards for each episode
-episode_rewards = []
+# Define hyperparameters
+ALPHA = 0.1
+GAMMA = 0.9
+EPSILON = 0.1
 
-# Loop over number of episodes
-for i in range(n_episodes):
+if __name__ == "__main__":
 
-    # Reset environment
-    state = env.reset()
-    done = False
-    episode_reward = 0
-    steps = 0
+    start_state = (0, 0) # set start state of agent
 
-    # Take a series of actions using the agent
-    while not done:
-        action = env.action_space.sample()
-        state, reward, done = env.step(action)
-        episode_reward += reward  # Update the episode reward
-        steps += 1
-        env.render()
+    # Initialize environment
+    env = GridEnv(5, 5, start_state)
 
-    # Store the episode reward
-    episode_rewards.append(episode_reward)
+    # model.no_learning(env, N_EPISODES)
+    model.q_learning(env, ALPHA, GAMMA, EPSILON, N_EPISODES)
 
-    print(f"Episode: {i}, Steps: {steps}, Reward: {episode_reward}")
-
-env.close()
+    env.close()

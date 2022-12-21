@@ -3,18 +3,20 @@ import gym.spaces
 import numpy as np
 from mrl_grid.window import Window
 
-FPS = 10
+FPS = 20
 
 class GridEnv(gym.Env):
-    def __init__(self, width, height):
+    def __init__(self, width, height, start_state):
 
         self.width = width
         self.height = height
 
         self.grid = np.zeros((self.width, self.height))
-        self.current_pos = (0, 0)
+        self.initial_state = start_state
+        self.current_pos = start_state
 
-        self.action_space = gym.spaces.Discrete(4)  # up, down, left, right
+        self.nA = 4 # no of actions
+        self.action_space = gym.spaces.Discrete(self.nA)  # up, down, left, right
         self.observation_space = gym.spaces.Box(0, 1, shape=(self.width, self.height))
 
         # Rendering
@@ -58,9 +60,9 @@ class GridEnv(gym.Env):
         return self.current_pos, reward, done
 
     def reset(self):
-        self.grid = np.zeros((self.width, self.height))
-        self.current_pos = (0, 0)
-        return self.grid
+        self.grid = np.zeros((self.width, self.height)) # reset grid
+        self.current_pos = self.initial_state
+        return self.current_pos
 
     def render(self, mode='human'):
         if mode == "human":
