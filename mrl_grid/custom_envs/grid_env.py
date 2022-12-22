@@ -27,7 +27,10 @@ class GridEnv(gym.Env):
         x, y = state
         if self.grid[x, y] == 0:
             self.grid[x, y] = 1
-            return 10
+            if np.all(self.grid == 1):
+                return 100
+
+            return 1
         else:
             return -1
 

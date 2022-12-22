@@ -2,14 +2,15 @@
 name = "mrl-grid"
 version = "0.1.0"
 description = ""
-authors = ["Your Name <you@example.com>"]
+authors = ["Nickolai <you@example.com>"]
 readme = "README.md"
 packages = [{include = "mrl_grid"}]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "3.10.8"
 gym = "^0.26.2"
 matplotlib = "^3.6.2"
+tensorflow-macos = "^2.11.0"
 
 
 [build-system]
