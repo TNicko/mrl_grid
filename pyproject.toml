@@ -11,6 +11,7 @@ python = "3.10.8"
 gym = "^0.26.2"
 matplotlib = "^3.6.2"
 tensorflow-macos = "^2.11.0"
+tensorflow-metal = "^0.7.0"
 
 
 [build-system]
