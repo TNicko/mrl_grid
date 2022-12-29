@@ -8,10 +8,11 @@ packages = [{include = "mrl_grid"}]
 
 [tool.poetry.dependencies]
 python = "3.10.8"
-gym = "^0.26.2"
+gym = ">=0.21.0"
 matplotlib = "^3.6.2"
 tensorflow-macos = "^2.11.0"
 tensorflow-metal = "^0.7.0"
+pyvirtualdisplay = "^3.0"
 
 
 [build-system]
