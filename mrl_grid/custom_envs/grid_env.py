@@ -3,7 +3,7 @@ import gym.spaces
 import numpy as np
 from mrl_grid.window import Window
 
-FPS = 10
+FPS = 20
 
 class GridEnv(gym.Env):
     def __init__(self, width, height, start_state):
@@ -20,8 +20,8 @@ class GridEnv(gym.Env):
         self.action_space = gym.spaces.Discrete(self.nA)  # up, down, left, right
 
         self.observation_space = gym.spaces.Box(
-            low=np.zeros(self.grid_size * 2),
-            high=np.ones(self.grid_size * 2),
+            low=np.zeros(self.grid_size),
+            high=np.ones(self.grid_size),
             dtype=np.float32
         )
 
@@ -31,12 +31,25 @@ class GridEnv(gym.Env):
     
     def reward_function(self, pos: tuple, action=None) -> int:
         x, y = pos
-        if self.grid[x, y] == 0:
-            # if np.all(self.grid == 1):
-            #     return 100
-            return 1
-        else:
-            return -1
+        reward = 0
+
+        # Illegal move outside of grid boundary
+        if x != max(0, min(x, self.width - 1)) or y != max(0, min(y, self.height - 1)):
+            reward += -0.5
+
+        # moved to new grid cell
+        elif self.grid[x, y] == 0:
+            self.grid[x, y] = 1 # Mark grid cell as traversed
+            reward += 1
+            
+            # All of grid explored
+            if np.all(self.grid == 1):
+                reward += 100
+ 
+        reward += -0.05 # movement cost
+        
+        return reward
+            
 
     def step(self, action):
         x, y = self.current_pos
@@ -50,10 +63,12 @@ class GridEnv(gym.Env):
         elif action == 3:  # right
             y += 1
 
+        self.current_pos = (x, y)
+        reward = self.reward_function(self.current_pos, action)
+
         # Make sure coords are in range of grid provided
         x = max(0, min(x, self.width - 1))
         y = max(0, min(y, self.height - 1))
-
         self.current_pos = (x, y)
 
         # Check if goal has been reached (all tiles visited)
@@ -62,11 +77,7 @@ class GridEnv(gym.Env):
         else:
             done = False
 
-        reward = self.reward_function(self.current_pos, action)
         state = self.pos_to_state(self.current_pos)
-
-        # Grid cell now traversed
-        self.grid[x, y] = 1
 
         return state, reward, done
 
@@ -97,15 +108,7 @@ class GridEnv(gym.Env):
         Get correct state index of current position
         """
         x, y = pos
-
         state = y * self.width + x
-        # State for non-traversed cell
-        # if self.grid[x, y] == 0:
-        #     state = y * self.width + x
-        
-        # # State for traversed cell
-        # if self.grid[x, y] == 1:
-        #     state = (y * self.width + x) + self.grid_size
         
         return state
     
@@ -113,13 +116,8 @@ class GridEnv(gym.Env):
         """
         Get correct position of state
         """
-        if state >= self.grid_size:
-            tmp = state - self.grid_size
-        else:
-            tmp = state
-
-        y = tmp // self.width
-        x = tmp % self.width
+        y = state // self.width
+        x = state % self.width
 
         return (x, y)
         

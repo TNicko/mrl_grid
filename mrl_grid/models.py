@@ -117,16 +117,13 @@ def no_learning(env, n_episodes):
         while not done:
             env.render()
 
-            # Agent Policy
+            # Get action based on whether next state's grid cell is new or old
             possible_next_states = get_possible_next_states(state, env.grid_size, env.height)
-
-
             for a, s in list(possible_next_states.items()):
                 pos = env.state_to_pos(s)
                 if env.grid[pos[0], pos[1]] == 1:
                     possible_next_states.pop(a)
 
-            
             if len(possible_next_states) == 0:
                 action = env.action_space.sample() # Choose random available action
             else:
@@ -134,6 +131,7 @@ def no_learning(env, n_episodes):
 
 
             next_state, reward, done = env.step(action) # Take step 
+            print(reward, env.grid)
             episode_reward += reward  # Update the episode reward
             steps += 1
 
@@ -145,7 +143,7 @@ def no_learning(env, n_episodes):
         print(f"Episode: {i}, Steps: {steps}, Reward: {episode_reward}")
 
 
-def q_learning(env, lr, gamma, epsilon, n_episodes):
+def q_learning(env, lr, gamma, epsilon, n_episodes, n_steps=1):
     """
     Implements Q-learning algorithm.
     """
@@ -164,6 +162,10 @@ def q_learning(env, lr, gamma, epsilon, n_episodes):
         episode_reward = 0
         steps = 0
 
+        # Initialise variables to store the sequence of actions & rewards
+        action_sequence = []
+        reward_sequence = []
+
         # Take a series of actions using the agent
         while not done:
             env.render()
@@ -176,16 +178,34 @@ def q_learning(env, lr, gamma, epsilon, n_episodes):
 
             next_state, reward, done = env.step(action) # Take step in env
 
-            # Update Q-value for the current state and action
-            old_val = q_table[state, action]
-            next_max = np.max(q_table[next_state])
-            new_val = (1 - lr) * old_val + lr * (reward + gamma * next_max)
+            # Store action & reward in sequence
+            action_sequence.append((state, action))
+            reward_sequence.append(reward)
 
-            q_table[state, action] = new_val
+            # If sequence is long enough, update the Q-value using n-step Q-learning
+            if len(action_sequence) >= n_steps:
+                # Calculate n-step return
+                n_step_return = sum([gamma**i * reward_sequence[i] for i in range(n_steps)])
+                
+                # Add expected return from next state
+                if not done:
+
+                    n_step_return += gamma**n_steps * np.max(q_table[next_state])
+
+                    # Update Q-value for first state in sequence
+                    state, action = action_sequence[0]
+
+                    old_val = q_table[state, action]
+                    new_val = (1 - lr) * old_val + lr * n_step_return
+
+                    q_table[state, action] = new_val
+
+                    # Remove first element from sequences
+                    action_sequence.pop(0)
+                    reward_sequence.pop(0)
 
             state = next_state
-            episode_reward += reward  # Update the episode reward
-
+            episode_reward += reward 
             steps += 1
 
         print(f"Episode: {i}, Steps: {steps}, Reward: {episode_reward}")

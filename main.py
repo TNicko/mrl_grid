@@ -6,6 +6,11 @@ import tensorflow as tf
 from statistics import mean 
 import datetime
 
+#TODO 
+# Add multiple agents to same environment
+# Add a WAIT action to action space.
+# Negative rewards: collide against obstacles/other agents, no motion (waiting)
+
 def run(env, TrainNet, TargetNet, epsilon, copy_step):
     """
     :param env: training environment
@@ -106,7 +111,8 @@ if __name__ == "__main__":
 
 
     no_learning(env, episodes)
-    # q_learning(env, lr, gamma, epsilon, episodes)
+    # q_steps = 2
+    # q_learning(env, lr, gamma, epsilon, episodes, q_steps)
 
     env.close()
 
