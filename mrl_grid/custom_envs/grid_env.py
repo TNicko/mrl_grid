@@ -6,22 +6,22 @@ from mrl_grid.window import Window
 FPS = 20
 
 class GridEnv(gym.Env):
-    def __init__(self, width, height, start_state):
+    def __init__(self, cols, rows, n_channels, start_pos):
 
-        self.width = width
-        self.height = height
-        self.grid_size = width * height
+        self.cols = cols
+        self.rows = rows
+        self.grid_size = cols * rows
 
-        self.grid = np.zeros((self.width, self.height))
-        self.initial_state = start_state
-        self.current_pos = start_state
+        self.grid = np.zeros((self.cols, self.rows))
+        self.start_pos = start_pos
+        self.current_pos = start_pos
 
         self.nA = 4 # no of actions
         self.action_space = gym.spaces.Discrete(self.nA)  # up, down, left, right
 
         self.observation_space = gym.spaces.Box(
-            low=np.zeros(self.grid_size),
-            high=np.ones(self.grid_size),
+            low=np.zeros(self.grid_size * n_channels),
+            high=np.ones(self.grid_size * n_channels),
             dtype=np.float32
         )
 
@@ -34,7 +34,7 @@ class GridEnv(gym.Env):
         reward = 0
 
         # Illegal move outside of grid boundary
-        if x != max(0, min(x, self.width - 1)) or y != max(0, min(y, self.height - 1)):
+        if x != max(0, min(x, self.cols - 1)) or y != max(0, min(y, self.rows - 1)):
             reward += -0.5
 
         # moved to new grid cell
@@ -67,8 +67,8 @@ class GridEnv(gym.Env):
         reward = self.reward_function(self.current_pos, action)
 
         # Make sure coords are in range of grid provided
-        x = max(0, min(x, self.width - 1))
-        y = max(0, min(y, self.height - 1))
+        x = max(0, min(x, self.cols - 1))
+        y = max(0, min(y, self.rows - 1))
         self.current_pos = (x, y)
 
         # Check if goal has been reached (all tiles visited)
@@ -82,8 +82,9 @@ class GridEnv(gym.Env):
         return state, reward, done
 
     def reset(self):
-        self.grid = np.zeros((self.width, self.height)) # reset grid
-        start_state = self.pos_to_state(self.initial_state)
+        self.grid = np.zeros((self.cols, self.rows)) # reset grid
+        self.current_pos = self.start_pos
+        start_state = self.pos_to_state(self.start_pos)
         return start_state
 
     def render(self, mode='human'):
@@ -93,7 +94,7 @@ class GridEnv(gym.Env):
     def render_gui(self):
 
         if self.window == None:
-            self.window = Window('Grid World', self.width, self.height, self.fps)
+            self.window = Window('Grid World', self.cols, self.rows, self.fps)
             self.window.show()
 
         self.window.render(self.grid, self.current_pos)
@@ -108,17 +109,15 @@ class GridEnv(gym.Env):
         Get correct state index of current position
         """
         x, y = pos
-        state = y * self.width + x
-        
+        state = y * self.cols + x
         return state
     
     def state_to_pos(self, state: int) -> tuple:
         """
         Get correct position of state
         """
-        y = state // self.width
-        x = state % self.width
-
+        y = state // self.cols
+        x = state % self.cols
         return (x, y)
         
 

@@ -1,7 +1,10 @@
 import gym
 import numpy as np
+from typing import Literal, get_args
 from mrl_grid.custom_envs.grid_env import GridEnv
-from mrl_grid.models import DQN, no_learning, q_learning
+from mrl_grid.models.dqn import DQN
+from mrl_grid.models.q_learning import QLearning
+from mrl_grid.models.no_learning import NoLearning
 import tensorflow as tf
 from statistics import mean 
 import datetime
@@ -10,109 +13,87 @@ import datetime
 # Add multiple agents to same environment
 # Add a WAIT action to action space.
 # Negative rewards: collide against obstacles/other agents, no motion (waiting)
+# Add max steps per epsiode ???
+# Create grid environment maps and feed dynamically to GridEnv to be created
 
-def run(env, TrainNet, TargetNet, epsilon, copy_step):
-    """
-    :param env: training environment
-    :param TrainNet: 
-    :param TargetNet:
-    :param epsilon: value (0-1) that controls trade-off between exploration & exploitation
-    :param copy_step: interval steps for weight copying
-    :returns rewards, mean(losses): 
-    """
-    rewards = 0
-    count = 0
-    done = False
-    observations = env.reset()
-    losses = list()
+# Initialize environment
+start_state = (0, 0) # set start state of agent
+n_channels = 2       # Agent pos channel & agent path channel
+width = 3
+height = 3
 
-    while not done:
-        action = TrainNet.get_action(observations, epsilon)
-        prev_observations = observations
-        observations, reward, done = env.step(action)
-        rewards += reward
+# Define hyperparameters
+lr = 0.1         # learning rate
+gamma = 0.9      # discount factor (value between 0,1)
+epsilon = 0.1    # decays overtime (value between 0,1)
+min_epsilon = 0.1
+decay = 0.99
 
-        exp = {'s': prev_observations, 'a': action, 'r': reward, 's2': observations, 'done': done}
+# Number of times environment is run
+episodes = 100 
+n_split = 10 # Split episode outputs into this number
 
-        TrainNet.add_experience(exp)
-        loss = TrainNet.train(TargetNet)
+# Initialise lists for rewards & steps per episode
+total_rewards = np.empty(episodes)
+total_steps = np.empty(episodes)
 
-        if isinstance(loss, int):
-            losses.append(loss)
-        else:
-            losses.append(loss.numpy())
+TYPES = Literal["qlearning", "nolearning"]
+
+def run(env, type: TYPES = "nolearning", render=False):
+    # Check type input exists
+    options = get_args(TYPES)
+    assert type in options, f"'{type}' is not in {options}"
+
+    if type == 'qlearning':
+        qlr = QLearning(env, lr, gamma, epsilon)
+    if type == 'nolearning':
+        nol = NoLearning(env)
+    
+    for n in range(episodes):
+        steps = 0
+        episode_reward = 0
+        done = False
+        state = env.reset()
+
+        if type == 'qlearning':
+            qlr.decay_epsilon(min_epsilon, decay)
         
-        count += 1
-        if count % copy_step == 0:
-            TargetNet.copy_weights(TrainNet)
-    
-    return rewards, mean(losses), count
+        while not done:
+            if render: env.render() # Render grid 
+
+            if type == 'qlearning':
+                action = qlr.select_action(state)
+            if type == 'nolearning':
+                action = nol.select_action(state, type="assist")
+            
+            next_state, reward, done = env.step(action) # Take step in env
+
+            if type == 'qlearning':
+                qlr.train(action, state, next_state, reward)
+            
+            state = next_state
+            episode_reward += reward
+            steps += 1
+
+        total_rewards[n] = episode_reward
+        total_steps[n] = steps
+        avg_reward = round(total_rewards[max(0, n-n_split):(n+1)].mean(), 2)
+        avg_steps = round(total_steps[max(0, n-n_split):(n+1)].mean())
+        episode_reward = round(episode_reward, 2)
+
+        if n % n_split == 0:
+            # print(f"Episode: {n} | Steps: {steps} | Reward: {episode_reward} | Avg Reward (last {n_split}): {avg_reward}")
+            print("Episode: " + str(n).rjust(3) + " | avg Steps: " + str(avg_steps).rjust(4) + " | avg Reward: " + str(avg_reward).rjust(6))
+        
+    print("Episode: " + str(n).rjust(3) + " | avg Steps: " + str(avg_steps).rjust(4) + " | avg Reward: " + str(avg_reward).rjust(6))
 
 
-def test(env, TrainNet):
-    rewards = 0
-    steps = 0
-    done = False
-    observation = env.reset()
-    
-    while not done:
-        env.render()
-        action = TrainNet.get_action(observation, 0)
-        observation, reward, done = env.step(action)
-        steps += 1
-        rewards += reward
-
-    print("Testing results\n---------------")
-    print(f"Steps: {steps}")
-    print(f"Reward: {rewards}")
 
 if __name__ == "__main__":
 
-    # Initialize environment
-    start_state = (0, 0) # set start state of agent
-    width = 3
-    height = 3
-    env = GridEnv(width, height, start_state)
+    env = GridEnv(width, height, n_channels, start_state)
 
-    # Define hyperparameters
-    lr = 0.1         # learning rate
-    gamma = 0.9      # discount factor (value between 0,1)
-    copy_step = 25   # interval steps for weight copying
-    num_states = len(env.observation_space.sample())
-    num_actions = env.nA
-    hidden_units = [10, 10]
-    max_experiences = 1000
-    min_experiences = 10
-    batch_size = 32
-    lr = 1e-2
-
-    TrainNet = DQN(num_states, num_actions, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
-    TargetNet = DQN(num_states, num_actions, hidden_units, gamma, max_experiences, min_experiences, batch_size, lr)
-
-    episodes = 1 # Number of times environment is run
-    total_rewards = np.empty(episodes)
-    epsilon = 0.1 # decays overtime (value between 0,1)
-    min_epsilon = 0.1
-    decay = 0.999
-
-    # n_split = 10 # Split episode outputs into this number
-    # for n in range(episodes):
-
-    #     epsilon = max(min_epsilon, epsilon * decay)
-
-    #     total_reward, losses, steps = run(env, TrainNet, TargetNet, epsilon, copy_step)
-    #     total_rewards[n] = total_reward
-    #     avg_rewards = total_rewards[max(0, n-n_split):(n+1)].mean()
-        
-    #     if n % n_split == 0:
-    #         print(f"Episode: {n} Steps: {steps} Reward: {total_reward} Epsilon: {epsilon} Avg Reward (last {n_split}): {avg_rewards} Loss: {losses}")
-        
-    # print(f"avg reward for last {n_split} episodes: {avg_rewards}")
-
-
-    no_learning(env, episodes)
-    # q_steps = 2
-    # q_learning(env, lr, gamma, epsilon, episodes, q_steps)
+    run(env, type="qlearning", render=False)
 
     env.close()
 
