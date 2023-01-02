@@ -17,7 +17,7 @@ import datetime
 # Create grid environment maps and feed dynamically to GridEnv to be created
 
 # Initialize environment
-start_state = (0, 0) # set start state of agent
+start_pos = (0, 0) # set start state of agent
 n_channels = 2       # Agent pos channel & agent path channel
 width = 3
 height = 3
@@ -30,8 +30,8 @@ min_epsilon = 0.1
 decay = 0.99
 
 # Number of times environment is run
-episodes = 100 
-n_split = 10 # Split episode outputs into this number
+episodes = 20
+n_split = 1 # Split episode outputs into this number
 
 # Initialise lists for rewards & steps per episode
 total_rewards = np.empty(episodes)
@@ -53,7 +53,8 @@ def run(env, type: TYPES = "nolearning", render=False):
         steps = 0
         episode_reward = 0
         done = False
-        state = env.reset()
+        grid_state = env.reset()
+        state = get_int_from_state(grid_state)
 
         if type == 'qlearning':
             qlr.decay_epsilon(min_epsilon, decay)
@@ -67,6 +68,7 @@ def run(env, type: TYPES = "nolearning", render=False):
                 action = nol.select_action(state, type="assist")
             
             next_state, reward, done = env.step(action) # Take step in env
+            next_state = get_int_from_state(next_state)
 
             if type == 'qlearning':
                 qlr.train(action, state, next_state, reward)
@@ -88,12 +90,21 @@ def run(env, type: TYPES = "nolearning", render=False):
     print("Episode: " + str(n).rjust(3) + " | avg Steps: " + str(avg_steps).rjust(4) + " | avg Reward: " + str(avg_reward).rjust(6))
 
 
+def get_int_from_state(state) -> int:
+    """
+    Convert state array to integer 
+    """
+    state = state.astype(int)
+    state_int = int(''.join(map(str, state)), 2)
+    return state_int
 
 if __name__ == "__main__":
 
-    env = GridEnv(width, height, n_channels, start_state)
+    env = GridEnv(width, height, n_channels, start_pos)
 
-    run(env, type="qlearning", render=False)
+    policy = "qlearning"
+    render = True
+    run(env, type=policy, render=render)
 
     env.close()
 

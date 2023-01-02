@@ -10,8 +10,8 @@ class QLearning:
         self.gamma = gamma
         self.epsilon = epsilon
         self.env = env
-        
-        self.Q = np.zeros((env.observation_space.shape[0], env.nA))
+
+        self.Q = np.zeros((env.nS, env.nA))
 
     def train(self, action, state, next_state, reward):
 

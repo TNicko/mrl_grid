@@ -35,8 +35,8 @@ class Window:
         Render image or update the image being shown
         """
         self.ax.clear()
-
-        self.ax.imshow(grid, cmap=self.cmap, vmin=0, vmax=1)
+        
+        self.ax.imshow(grid[:,:,1], cmap=self.cmap, vmin=0, vmax=1)
 
         # Remove ticks on axis
         self.ax.set_xticks([])

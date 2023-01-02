@@ -11,18 +11,21 @@ class GridEnv(gym.Env):
         self.cols = cols
         self.rows = rows
         self.grid_size = cols * rows
+        self.channels = n_channels
 
-        self.grid = np.zeros((self.cols, self.rows))
         self.start_pos = start_pos
         self.current_pos = start_pos
 
-        self.nA = 4 # no of actions
-        self.action_space = gym.spaces.Discrete(self.nA)  # up, down, left, right
+        self.grid = self.initialise_grid()
 
+        self.nA = 4 # no of actions (up, down, left, right)
+        self.nS = 2 ** (self.grid_size * self.channels) # no of states
+        self.action_space = gym.spaces.Discrete(self.nA)
+        
         self.observation_space = gym.spaces.Box(
-            low=np.zeros(self.grid_size * n_channels),
-            high=np.ones(self.grid_size * n_channels),
-            dtype=np.float32
+            np.zeros((self.rows, self.cols, self.channels), dtype=np.float32),    
+            np.ones((self.rows, self.cols, self.channels), dtype=np.float32),
+            dtype=np.float32    
         )
 
         # Rendering
@@ -38,19 +41,18 @@ class GridEnv(gym.Env):
             reward += -0.5
 
         # moved to new grid cell
-        elif self.grid[x, y] == 0:
-            self.grid[x, y] = 1 # Mark grid cell as traversed
+        elif self.grid[x, y, 1] == 0:
+            self.grid[x, y, 1] = 1 # Mark grid cell as traversed
             reward += 1
             
             # All of grid explored
-            if np.all(self.grid == 1):
+            if np.all(self.grid[:,:,1] == 1):
                 reward += 100
  
         reward += -0.05 # movement cost
         
         return reward
             
-
     def step(self, action):
         x, y = self.current_pos
 
@@ -71,20 +73,23 @@ class GridEnv(gym.Env):
         y = max(0, min(y, self.rows - 1))
         self.current_pos = (x, y)
 
+        # Update agent position on grid
+        self.grid[:,:,0] = 0
+        self.grid[x, y, 0] = 1
+
         # Check if goal has been reached (all tiles visited)
-        if np.all(self.grid == 1):
+        if np.all(self.grid[:,:,1] == 1):
             done = True  # Set the done flag to True
         else:
             done = False
 
-        state = self.pos_to_state(self.current_pos)
+        state = self.flatten_grid(self.grid)
 
         return state, reward, done
 
     def reset(self):
-        self.grid = np.zeros((self.cols, self.rows)) # reset grid
-        self.current_pos = self.start_pos
-        start_state = self.pos_to_state(self.start_pos)
+        self.grid = self.initialise_grid()
+        start_state = self.flatten_grid(self.grid)
         return start_state
 
     def render(self, mode='human'):
@@ -92,7 +97,6 @@ class GridEnv(gym.Env):
             self.render_gui()
 
     def render_gui(self):
-
         if self.window == None:
             self.window = Window('Grid World', self.cols, self.rows, self.fps)
             self.window.show()
@@ -104,22 +108,31 @@ class GridEnv(gym.Env):
             self.window.close()
         return
 
-    def pos_to_state(self, pos: tuple) -> int:
+    def flatten_grid(self, grid):
         """
-        Get correct state index of current position
+        Flatten grid into a single vector
         """
-        x, y = pos
-        state = y * self.cols + x
-        return state
-    
-    def state_to_pos(self, state: int) -> tuple:
-        """
-        Get correct position of state
-        """
-        y = state // self.cols
-        x = state % self.cols
-        return (x, y)
-        
+        flat_grid = grid.flatten()
+        grid_array = np.array(flat_grid, dtype=np.float32)
+        return grid_array
+
+    def initialise_grid(self):
+        self.current_pos = self.start_pos
+
+        # Create grid array
+        grid = np.zeros((self.rows, self.cols, self.channels))
+
+        # Set agent start position on grid
+        x, y = self.start_pos
+        grid[x, y, 0] = 1
+        grid[x, y, 1] = 1
+
+        return grid
+
+
+
+
+
 
 
 

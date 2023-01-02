@@ -3,11 +3,11 @@ import tensorflow as tf
 import random
 
 class MyModel(tf.keras.Model):
-    def __init__(self, num_states, hidden_units, num_actions):
+    def __init__(self, n_states, hidden_units, n_actions):
         super(MyModel, self).__init__()
         # Input layer
-        self.input_layer = tf.keras.layers.InputLayer(input_shape = (num_states,))
-
+        self.input_layer = tf.keras.layers.InputLayer(input_shape = (n_states,))
+        
         # Hidden layers
         self.hidden_layers = []
         for i in hidden_units:
@@ -16,7 +16,7 @@ class MyModel(tf.keras.Model):
 
         # Ouput layer
         self.output_layer = tf.keras.layers.Dense(
-            num_actions, activation='linear', kernel_initializer='RandomNormal')
+            n_actions, activation='linear', kernel_initializer='RandomNormal')
 
     @tf.function
     def call(self, inputs):

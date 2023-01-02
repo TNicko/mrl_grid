@@ -5,20 +5,20 @@ from mrl_grid.models.models import MyModel
 class DQN:
     def __init__(
         self, 
-        num_states, 
-        num_actions, 
+        n_states, 
+        n_actions, 
         hidden_units, 
         gamma, 
         max_experiences, 
         min_experiences, 
         batch_size, 
         lr):
-        self.num_actions = num_actions
+        self.n_actions = n_actions
         self.batch_size = batch_size
         self.batch_size = batch_size
         self.optimizer = tf.optimizers.Adam(lr)
         self.gamma = gamma
-        self.model = MyModel(num_states, hidden_units, num_actions)
+        self.model = MyModel(n_states, hidden_units, n_actions)
         self.experience = {'s': [], 'a': [], 'r': [], 's2': [], 'done': []}
         self.max_experiences = max_experiences
         self.min_experiences = min_experiences
@@ -42,7 +42,7 @@ class DQN:
 
         with tf.GradientTape() as tape:
             selected_action_values = tf.math.reduce_sum(
-                self.predict(states) * tf.one_hot(actions, self.num_actions), axis=1)
+                self.predict(states) * tf.one_hot(actions, self.n_actions), axis=1)
             loss = tf.math.reduce_mean(tf.square(actual_values - selected_action_values))
             variables = self.model.trainable_variables
             gradients = tape.gradient(loss, variables)
@@ -52,7 +52,7 @@ class DQN:
 
     def get_action(self, states, epsilon):
         if np.random.random() < epsilon:
-            return np.random.choice(self.num_actions)
+            return np.random.choice(self.n_actions)
         else:
             return np.argmax(self.predict(np.atleast_2d(states))[0])
 
