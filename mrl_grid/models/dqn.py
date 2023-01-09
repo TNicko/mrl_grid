@@ -5,26 +5,28 @@ from mrl_grid.models.models import MyModel
 class DQN:
     def __init__(
         self, 
-        n_states, 
-        n_actions, 
-        hidden_units, 
-        gamma, 
-        max_experiences, 
-        min_experiences, 
-        batch_size, 
-        lr):
-        self.n_actions = n_actions
-        self.batch_size = batch_size
-        self.batch_size = batch_size
-        self.optimizer = tf.optimizers.Adam(lr)
-        self.gamma = gamma
-        self.model = MyModel(n_states, hidden_units, n_actions)
+        observation_space, 
+        nA):
+        # Initialise parameters
+        self.render = False
+        self.nA = nA
+        self.hidden_units = [10, 10]
+        self.lr = 0.1       # learning rate
+        self.gamma = 0.9    # discount factor (value between 0,1)
+        self.epsilon = 0.1  # decays overtime (value between 0,1)
+        self.min_epsilon = 0.1
+        self.decay = 0.99
+        self.max_experiences = 10_000
+        self.min_experiences = 100
+        self.batch_size = 32
+        self.copy_step = 25
+        self.optimizer = tf.optimizers.Adam(self.lr)
+        self.model = MyModel(observation_space, self.hidden_units, nA)
         self.experience = {'s': [], 'a': [], 'r': [], 's2': [], 'done': []}
-        self.max_experiences = max_experiences
-        self.min_experiences = min_experiences
+
 
     def predict(self, inputs):
-        return self.model(np.atleast_2d(inputs.astype('float32')))
+        return self.model(inputs.astype('float32'))
 
     def train(self, TargetNet):
         if len(self.experience['s']) < self.min_experiences:
@@ -32,7 +34,6 @@ class DQN:
 
         ids = np.random.randint(low=0, high=len(self.experience['s']), size=self.batch_size)
         states = np.asarray([self.experience['s'][i] for i in ids])
-        print(states)
         actions = np.asarray([self.experience['a'][i] for i in ids])
         rewards = np.asarray([self.experience['r'][i] for i in ids])
         states_next = np.asarray([self.experience['s2'][i] for i in ids])
@@ -42,7 +43,7 @@ class DQN:
 
         with tf.GradientTape() as tape:
             selected_action_values = tf.math.reduce_sum(
-                self.predict(states) * tf.one_hot(actions, self.n_actions), axis=1)
+                self.predict(states) * tf.one_hot(actions, self.nA), axis=1)
             loss = tf.math.reduce_mean(tf.square(actual_values - selected_action_values))
             variables = self.model.trainable_variables
             gradients = tape.gradient(loss, variables)
@@ -50,9 +51,9 @@ class DQN:
 
             return loss
 
-    def get_action(self, states, epsilon):
-        if np.random.random() < epsilon:
-            return np.random.choice(self.n_actions)
+    def get_action(self, states):
+        if np.random.random() < self.epsilon:
+            return np.random.choice(self.nA)
         else:
             return np.argmax(self.predict(np.atleast_2d(states))[0])
 
@@ -70,3 +71,6 @@ class DQN:
 
         for v1, v2 in zip(variables1, variables2):
             v1.assign(v2.numpy())
+
+    def decay_epsilon(self):
+        self.epsilon = max(self.min_epsilon, self.epsilon * self.decay)

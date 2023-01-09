@@ -3,10 +3,10 @@ import tensorflow as tf
 import random
 
 class MyModel(tf.keras.Model):
-    def __init__(self, n_states, hidden_units, n_actions):
+    def __init__(self, observation_space, hidden_units, n_actions):
         super(MyModel, self).__init__()
         # Input layer
-        self.input_layer = tf.keras.layers.InputLayer(input_shape = (n_states,))
+        self.input_layer = tf.keras.layers.InputLayer(input_shape = observation_space.shape)
         
         # Hidden layers
         self.hidden_layers = []
@@ -24,6 +24,7 @@ class MyModel(tf.keras.Model):
         for layer in self.hidden_layers:
             z = layer(z)
         output = self.output_layer(z)
+        print(output)
         return output
 
 

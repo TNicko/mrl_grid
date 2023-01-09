@@ -19,7 +19,7 @@ class GridEnv(gym.Env):
         self.grid = self.initialise_grid()
 
         self.nA = 4 # no of actions (up, down, left, right)
-        self.nS = 2 ** (self.grid_size * self.channels) # no of states
+        self.nS = 2 ** (self.grid_size * 2) * self.grid_size # no of states
         self.action_space = gym.spaces.Discrete(self.nA)
         
         self.observation_space = gym.spaces.Box(
@@ -83,14 +83,15 @@ class GridEnv(gym.Env):
         else:
             done = False
 
-        state = self.flatten_grid(self.grid)
+        # state = self.flatten_grid(self.grid)
+        state = self.grid
 
         return state, reward, done
 
     def reset(self):
         self.grid = self.initialise_grid()
-        start_state = self.flatten_grid(self.grid)
-        return start_state
+        # start_state = self.flatten_grid(self.grid)
+        return self.grid
 
     def render(self, mode='human'):
         if mode == "human":
@@ -108,13 +109,13 @@ class GridEnv(gym.Env):
             self.window.close()
         return
 
-    def flatten_grid(self, grid):
-        """
-        Flatten grid into a single vector
-        """
-        flat_grid = grid.flatten()
-        grid_array = np.array(flat_grid, dtype=np.float32)
-        return grid_array
+    # def flatten_grid(self, grid):
+    #     """
+    #     Flatten grid into a single vector
+    #     """
+    #     flat_grid = grid.flatten()
+    #     grid_array = np.array(flat_grid, dtype=np.float32)
+    #     return grid_array
 
     def initialise_grid(self):
         self.current_pos = self.start_pos
