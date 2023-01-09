@@ -31,12 +31,20 @@ min_epsilon = 0.1
 decay = 0.99
 
 # Number of times environment is run
-episodes = 1
-n_split = 1 # Split episode outputs into this number
+episodes = 100
+n_split = 5 # Split episode outputs into this number
 
 # Initialise lists for rewards & steps per episode
 total_rewards = np.empty(episodes)
 total_steps = np.empty(episodes)
+avg_episode_data = {
+    'ep': [], 
+    'steps': [], 
+    'steps_min': [],
+    'steps_max': [],
+    'reward': [], 
+    'reward_min': [],
+    'reward_max': []}
 
 TYPES = Literal["qlearning", "nolearning"]
 
@@ -80,72 +88,41 @@ def run(env, type: TYPES = "nolearning", render=False):
 
         total_rewards[n] = episode_reward
         total_steps[n] = steps
-        avg_reward = round(total_rewards[max(0, n-n_split):(n+1)].mean(), 2)
-        avg_steps = round(total_steps[max(0, n-n_split):(n+1)].mean())
         episode_reward = round(episode_reward, 2)
 
-        if n % n_split == 0:
-            # print(f"Episode: {n} | Steps: {steps} | Reward: {episode_reward} | Avg Reward (last {n_split}): {avg_reward}")
-            print("Episode: " + str(n).rjust(3) + " | avg Steps: " + str(avg_steps).rjust(4) + " | avg Reward: " + str(avg_reward).rjust(6))
-        
-    print("Episode: " + str(n).rjust(3) + " | avg Steps: " + str(avg_steps).rjust(4) + " | avg Reward: " + str(avg_reward).rjust(6))
+        if n % n_split == 0 or n == episodes-1:
 
+            avg_reward, avg_steps, max_steps = set_avg_episode(n)
 
-def run_dqn(env, episodes, n_split):
+            print("Episode: " + str(n).rjust(3) + " | avg steps: " + str(avg_steps).rjust(4) + " | max steps: " + str(max_steps).rjust(4) + " | avg reward: " + str(avg_reward).rjust(6))
 
-    TrainNet = DQN(env.observation_space, env.nA)
-    TargetNet = DQN(env.observation_space, env.nA)
+def set_avg_episode(n):
+    # Get lists for current episode split
+    reward_split = total_rewards[max(0, n-n_split):(n+1)]
+    steps_split = total_steps[max(0, n-n_split):(n+1)]
 
-    for n in range(episodes):
-        steps = 0
-        episode_reward = 0
-        done = False
-        state = env.reset()
-        losses = list()
+    avg_reward = round(reward_split.mean(), 2)
+    avg_steps = round(steps_split.mean())
 
-        TrainNet.decay_epsilon()
+    avg_episode_data['ep'].append(n)
+    avg_episode_data['steps'].append(avg_steps)
+    avg_episode_data['reward'].append(avg_reward)
+    avg_episode_data['steps_min'].append(round(min(steps_split)))
+    avg_episode_data['steps_max'].append(round(max(steps_split)))
+    avg_episode_data['reward_min'].append(round(min(reward_split), 2))
+    avg_episode_data['reward_max'].append(round(max(reward_split), 2))
 
-        while not done:
-            if TrainNet.render: env.render() # Render grid 
-            
-            action = TrainNet.get_action(state)
-            prev_state = state
-            state, reward, done = env.step(action)
-            episode_reward += reward
-
-            exp = {'s': prev_state, 'a': action, 'r': reward, 's2': state, 'done': done}
-
-            TrainNet.add_experience(exp)
-            loss = TrainNet.train(TargetNet)
-
-            if isinstance(loss, int):
-                losses.append(loss)
-            else:
-                losses.append(loss.numpy())
-            
-            steps += 1
-            if steps % TrainNet.copy_step == 0:
-                TargetNet.copy_weights(TrainNet)
-
-        total_rewards[n] = episode_reward
-        total_steps[n] = steps
-        avg_reward = round(total_rewards[max(0, n-n_split):(n+1)].mean(), 2)
-        avg_steps = round(total_steps[max(0, n-n_split):(n+1)].mean())
-        episode_reward = round(episode_reward, 2)
-
-        if n % n_split == 0:
-            # print(f"Episode: {n} | Steps: {steps} | Reward: {episode_reward} | Avg Reward (last {n_split}): {avg_reward}")
-            print("Episode: " + str(n).rjust(3) + " | avg Steps: " + str(avg_steps).rjust(4) + " | avg Reward: " + str(avg_reward).rjust(6))
-        
-    print("Episode: " + str(n).rjust(3) + " | avg Steps: " + str(avg_steps).rjust(4) + " | avg Reward: " + str(avg_reward).rjust(6))
+    return avg_reward, avg_steps, round(max(steps_split)) 
 
 def encode_state(state) -> int:
+    flat_grid = state.flatten()
+    state = np.array(flat_grid, dtype=np.float32)
     """
     Convert state array to integer 
     """
     state = state.astype(int)
     state_int = int(''.join(map(str, state)), 2)
-    print(state_int)
+    # print(state_int)
     return state_int
 
 def plot_avg_rewards():
@@ -161,10 +138,11 @@ if __name__ == "__main__":
 
     env = GridEnv(width, height, n_channels, start_pos)
     policy = "qlearning"
-    render = True
+    render = False
     
-    run_dqn(env, episodes, n_split)
-    # run(env, type=policy, render=render)
+    # run_dqn(env, episodes, n_split)
+    run(env, type=policy, render=render)
+    plot_avg_rewards()
 
     env.close()
 
