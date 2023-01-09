@@ -8,6 +8,7 @@ from mrl_grid.models.no_learning import NoLearning
 import tensorflow as tf
 from statistics import mean 
 import datetime
+import matplotlib.pyplot as plt
 
 #TODO 
 # Add multiple agents to same environment
@@ -146,6 +147,15 @@ def encode_state(state) -> int:
     state_int = int(''.join(map(str, state)), 2)
     print(state_int)
     return state_int
+
+def plot_avg_rewards():
+    plt.plot(avg_episode_data['ep'], avg_episode_data['reward'], label="avg")
+    plt.plot(avg_episode_data['ep'], avg_episode_data['reward_min'], label="min")
+    plt.plot(avg_episode_data['ep'], avg_episode_data['reward_max'], label="max")
+    plt.xlabel("Episodes")
+    plt.ylabel("Reward")
+    plt.legend(loc=4)
+    plt.show()
 
 if __name__ == "__main__":
 
