@@ -23,9 +23,8 @@ class GridEnv(gym.Env):
         self.action_space = gym.spaces.Discrete(self.nA)
         
         self.observation_space = gym.spaces.Box(
-            np.zeros((self.rows, self.cols, self.channels), dtype=np.float32),    
-            np.ones((self.rows, self.cols, self.channels), dtype=np.float32),
-            dtype=np.float32    
+            np.zeros((self.rows, self.cols, self.channels)),    
+            np.ones((self.rows, self.cols, self.channels)),  
         )
 
         # Rendering

@@ -2,13 +2,13 @@ import gym
 import numpy as np
 from typing import Literal, get_args
 from mrl_grid.custom_envs.grid_env import GridEnv
-from mrl_grid.models.dqn import DQN
+from mrl_grid.models.dqn import DQNAgent, ReplayBuffer
 from mrl_grid.models.q_learning import QLearning
 from mrl_grid.models.no_learning import NoLearning
+import mrl_grid.analysis as analysis
 import tensorflow as tf
 from statistics import mean 
 import datetime
-import matplotlib.pyplot as plt
 
 #TODO 
 # Add multiple agents to same environment
@@ -20,19 +20,19 @@ import matplotlib.pyplot as plt
 # Initialize environment
 start_pos = (0, 0) # set start state of agent
 n_channels = 2       # Agent pos channel & agent path channel
-width = 3
-height = 3
+width = 5
+height = 5
 
 # Define hyperparameters
-lr = 0.1         # learning rate
+lr = 0.001         # learning rate
 gamma = 0.9      # discount factor (value between 0,1)
 epsilon = 0.1    # decays overtime (value between 0,1)
 min_epsilon = 0.1
 decay = 0.99
 
 # Number of times environment is run
-episodes = 100
-n_split = 5 # Split episode outputs into this number
+episodes = 500
+n_split = 10 # Split episode outputs into this number
 
 # Initialise lists for rewards & steps per episode
 total_rewards = np.empty(episodes)
@@ -125,28 +125,74 @@ def encode_state(state) -> int:
     # print(state_int)
     return state_int
 
-def plot_avg_rewards():
-    plt.plot(avg_episode_data['ep'], avg_episode_data['reward'], label="avg")
-    plt.plot(avg_episode_data['ep'], avg_episode_data['reward_min'], label="min")
-    plt.plot(avg_episode_data['ep'], avg_episode_data['reward_max'], label="max")
-    plt.xlabel("Episodes")
-    plt.ylabel("Reward")
-    plt.legend(loc=4)
-    plt.show()
+def run_env(env, agent, buffer, render):
+    """
+    Runs the "env" with the instructions 
+    produced by "agent" and collects experiences
+    into "buffer" for later training.
+    """
+    steps = 0
+    episode_reward = 0
+    done = False
+    state = env.reset()
+
+    # Decay epsilon
+    agent.decay_epsilon()
+    
+    while not done:
+        if render: env.render() # Render grid
+
+        action = agent.policy(state)
+        # print(action)
+        next_state, reward, done = env.step(action) # Take step in env
+        
+        exp = {'s': state, 'a': action, 'r': reward, 's2': next_state, 'd': done}
+        buffer.add_experience(exp)
+
+        state = next_state
+        episode_reward += reward
+        steps += 1
+
+    return episode_reward, steps
+
+def train_dqn(env, episodes, n_split, render):
+    """
+    Trains a DQN agent on the environment
+    """
+    agent = DQNAgent(env.observation_space, env.nA)
+    buffer = ReplayBuffer()
+
+    for n in range(episodes):
+        episode_reward, steps = run_env(env, agent, buffer, render)
+        exp_batch = buffer.sample_batch()
+        loss = agent.train(exp_batch)
+
+        if n % 10 == 0:
+            agent.update_target_network()
+
+        total_rewards[n] = episode_reward
+        total_steps[n] = steps
+        episode_reward = round(episode_reward, 2)
+
+        if n % n_split == 0 or n == episodes-1:
+
+            avg_reward, avg_steps, max_steps = set_avg_episode(n)
+
+            print("Episode: " + str(n).rjust(3) + " | avg steps: " + str(avg_steps).rjust(4) + " | avg reward: " + str(avg_reward).rjust(6) + " | epsilon: " + str(agent.epsilon).rjust(4))
+
 
 if __name__ == "__main__":
 
     env = GridEnv(width, height, n_channels, start_pos)
-    policy = "qlearning"
+    model = "qlearning"
     render = False
     
-    # run_dqn(env, episodes, n_split)
-    run(env, type=policy, render=render)
-    plot_avg_rewards()
+    train_dqn(env, episodes, n_split, render)
+    # run(env, type=model, render=render)
+
+    # analysis.plot_avg_rewards(avg_episode_data)
+    analysis.plot_rewards(episodes, total_rewards)
+    analysis.plot_steps(episodes, total_steps)
 
     env.close()
 
-
-
-
-    
