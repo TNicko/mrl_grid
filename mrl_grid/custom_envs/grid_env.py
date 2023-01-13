@@ -19,7 +19,6 @@ class GridEnv(gym.Env):
         self.grid = self.initialise_grid()
 
         self.nA = 4 # no of actions (up, down, left, right)
-        self.nS = 2 ** (self.grid_size * 2) * self.grid_size # no of states
         self.action_space = gym.spaces.Discrete(self.nA)
         
         self.observation_space = gym.spaces.Box(

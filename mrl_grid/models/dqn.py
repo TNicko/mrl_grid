@@ -2,9 +2,65 @@ import random
 import numpy as np
 import tensorflow as tf
 from collections import deque
+from mrl_grid.env import Env
 
+class DQN(Env):
+    def __init__(self, env, episodes, n_split, render):
+        super().__init__(env, episodes, n_split, render)
+        self.agent = DQNAgent(self.env.observation_space, self.env.nA)
+        self.buffer = ReplayBuffer()
+        
+    def run(self, agent, buffer):
+        """
+        Runs the "env" with the instructions 
+        produced by "agent" and collects experiences
+        into "buffer" for later training.
+        """
+        steps = 0
+        episode_reward = 0
+        done = False
+        state = self.env.reset()
 
+        # Decay epsilon
+        agent.decay_epsilon()
+        
+        while not done:
+            if self.render: self.env.render() # Render grid
 
+            action = agent.policy(state)
+            # print(action)
+            next_state, reward, done = self.env.step(action) # Take step in env
+            
+            exp = {'s': state, 'a': action, 'r': reward, 's2': next_state, 'd': done}
+            buffer.add_experience(exp)
+
+            state = next_state
+            episode_reward += reward
+            steps += 1
+
+        return episode_reward, steps
+
+    def train(self):
+        """
+        Trains a DQN agent on the environment
+        """
+        for n in range(self.episodes):
+            episode_reward, steps = self.run(self.agent, self.buffer)
+            exp_batch = self.buffer.sample_batch()
+            loss = self.agent.train(exp_batch)
+
+            if n % 10 == 0:
+                self.agent.update_target_network()
+
+            self.total_rewards[n] = episode_reward
+            self.total_steps[n] = steps
+            episode_reward = round(episode_reward, 2)
+
+            if n % self.n_split == 0 or n == self.episodes-1:
+
+                avg_reward, avg_steps, max_steps = self.set_avg_episode(n)
+
+                self.print_episode(n, avg_steps, avg_reward, epsilon=self.agent.epsilon, avg=True)
 
 class DQNAgent:
     """
