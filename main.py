@@ -4,7 +4,7 @@ from typing import Literal, get_args
 from mrl_grid.custom_envs.grid_env import GridEnv
 from mrl_grid.models.dqn import DQN
 from mrl_grid.models.qlr import QLR
-from mrl_grid.models.nna import Random
+from mrl_grid.models.nna import NNA
 import mrl_grid.analysis as analysis
 import tensorflow as tf
 from statistics import mean 
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     dqn = DQN(env, episodes, n_split, render)
     dqn.train()
 
-    # nol = Random(env, episodes, n_split, render)
+    # nol = NNA(env, episodes, n_split, render)
     # nol.run()
 
     # analysis.plot_avg_rewards(avg_episode_data)

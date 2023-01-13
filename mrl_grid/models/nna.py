@@ -1,7 +1,6 @@
 from mrl_grid.env import Env
 
-
-class Random(Env):
+class NNA(Env):
     def __init__(self, env, episodes, n_split, render):
         super().__init__(env, episodes, n_split, render)
 
