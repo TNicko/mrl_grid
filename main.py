@@ -5,10 +5,12 @@ from mrl_grid.custom_envs.grid_env import GridEnv
 from mrl_grid.models.dqn import DQN
 from mrl_grid.models.qlr import QLR
 from mrl_grid.models.nna import NNA
+from mrl_grid.models.ppo import Actor, Critic, Agent 
 import mrl_grid.analysis as analysis
 import tensorflow as tf
 from statistics import mean 
 import datetime
+from stable_baselines3 import DQN
 
 #TODO 
 # Add multiple agents to same environment
@@ -20,10 +22,10 @@ import datetime
 # Initialize environment
 start_pos = (0, 0) # set start state of agent
 n_channels = 2       # Agent pos channel & agent path channel
-width = 5
-height = 5
+width = 3
+height = 3
 
-episodes = 50 # Number of times environment is run
+episodes = 100 # Number of times environment is run
 n_split = 10 # Split episode outputs into this number
 render = False # Render environment
 
@@ -31,11 +33,13 @@ if __name__ == "__main__":
 
     env = GridEnv(width, height, n_channels, start_pos)
 
-    dqn = DQN(env, episodes, n_split, render)
-    dqn.train()
 
+    # dqn = DQN(env, episodes, n_split, render)
+    # dqn.train()
     # nol = NNA(env, episodes, n_split, render)
     # nol.run()
+    # qlr = QLR(env, episodes, n_split, render)
+    # qlr.run()
 
     # analysis.plot_avg_rewards(avg_episode_data)
     # analysis.plot_rewards(episodes, dqn.total_rewards)

@@ -45,10 +45,9 @@ class QLR(Env):
             episode_reward = round(episode_reward, 2)
 
             if n % self.n_split == 0 or n == self.episodes-1:
-
                 avg_reward, avg_steps, max_steps = self.set_avg_episode(n)
 
-                self.print_episode(self, n, avg_steps, avg_reward, avg=True)
+                self.print_episode(n, avg_steps, avg_reward, avg=True)
 
     def train(self, action, state, next_state, reward):
 
@@ -73,7 +72,7 @@ class QLR(Env):
     def decay_epsilon(self):
         self.epsilon = max(self.min_epsilon, self.epsilon * self.decay)
 
-    def encode_state(state) -> int:
+    def encode_state(self, state) -> int:
         flat_grid = state.flatten()
         state = np.array(flat_grid, dtype=np.float32)
         """
