@@ -84,7 +84,9 @@ class GridEnv(gym.Env):
         # state = self.flatten_grid(self.grid)
         state = self.grid
 
-        return state, reward, done
+        info = {}
+
+        return state, reward, done, info
 
     def reset(self):
         self.grid = self.initialise_grid()
