@@ -9,4 +9,9 @@ venv/
 
 # Other
 **/__init__.py
+.DS_Store
+
+# Logs & Models
+logs/
+models/
 
