@@ -37,6 +37,23 @@ def run_a2c(env, models_dir, logdir, episodes = 100_000):
         model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name="A2C")
         model.save(f"{models_dir}/{TIMESTEPS*i}")
 
+def load_model(model_path, env, model_type):
+    if model_type == "PPO":
+        model = PPO.load(model_path, env=env)
+    if model_type == "A2C":
+        model = A2C.load(model_path, env=env)
+    if model_type == "DQN":
+        model = DQN.load(model_path, env=env)
+    
+    episodes = 5
+    for ep in range(episodes):
+        obs = env.reset()
+        done = False
+        while not done:
+            env.render()
+            action, states = model.predict(obs)
+            obs, reward, done, info = env.step(action)
+
 def set_folders(models_dir: str, logdir: str):
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)

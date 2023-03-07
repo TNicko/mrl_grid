@@ -1,2 +1,2 @@
-Run tensorboard:
+Run tensorboard:-
     tensorboard --logdir=logs/{MAP NAME}

@@ -6,11 +6,11 @@ from mrl_grid.window import Window
 FPS = 20
 
 class GridEnv(gym.Env):
-    def __init__(self, cols, rows, n_channels, start_pos):
+    def __init__(self, grid_map, n_channels, start_pos):
 
-        self.cols = cols
-        self.rows = rows
-        self.grid_size = cols * rows
+        self.grid_map = np.asarray(grid_map)
+        self.rows, self.cols = self.grid_map.shape
+        self.grid_size = self.cols * self.rows
         self.channels = n_channels
 
         self.start_pos = start_pos
@@ -108,14 +108,6 @@ class GridEnv(gym.Env):
         if self.window:
             self.window.close()
         return
-
-    # def flatten_grid(self, grid):
-    #     """
-    #     Flatten grid into a single vector
-    #     """
-    #     flat_grid = grid.flatten()
-    #     grid_array = np.array(flat_grid, dtype=np.float32)
-    #     return grid_array
 
     def initialise_grid(self):
         self.current_pos = self.start_pos

@@ -3,18 +3,15 @@ import numpy as np
 import os
 from typing import Literal, get_args
 from mrl_grid.custom_envs.grid_env import GridEnv
-# from mrl_grid.models.dqn import DQN
-# from mrl_grid.models.qlr import QLR
+import mrl_grid.maps as maps
 from mrl_grid.models.nna import NNA
-# from mrl_grid.models.ppo import Actor, Critic, Agent 
-from mrl_grid.run_models import run_ppo, run_a2c, run_dqn
-import mrl_grid.analysis as analysis
+from mrl_grid.run_models import run_ppo, run_a2c, run_dqn, load_model
 import tensorflow as tf
 from statistics import mean 
 import datetime
 from stable_baselines3 import DQN, PPO, A2C
-from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
+
 
 #TODO 
 # Add multiple agents to same environment
@@ -22,38 +19,25 @@ from stable_baselines3.common.monitor import Monitor
 # Negative rewards: collide against obstacles/other agents, no motion (waiting)
 # Add max steps per epsiode ???
 # Create grid environment maps and feed dynamically to GridEnv to be created
+# Explore Monte Carlo Tree Search (MCTS) for RL ???
 
 # Initialize environment
+grid_name = "9x9"
+grid_map = maps.SINGLE_AGENT_MAPS[grid_name]
 start_pos = (0, 0) # set start state of agent
 n_channels = 2       # Agent pos channel & agent path channel
-width = 5
-height = 5
 
-episodes = 300_000 # Number of times environment is run
+episodes = 1_000_000 # Number of times environment is run
 n_split = 10 # Split episode outputs into this number
 render = False # Render environment
 
 # directories
-grid_name = f"{width}x{height}"
 logdir = f"logs/{grid_name}"
 model_dir = f"models/{grid_name}"
 
-
-def load_model(model_path, env):
-    model = PPO.load(model_path, env=env)
-    
-    episodes = 5
-    for ep in range(episodes):
-        obs = env.reset()
-        done = False
-        while not done:
-            env.render()
-            action, states = model.predict(obs)
-            obs, reward, done, info = env.step(action)
-
 if __name__ == "__main__":
 
-    env = GridEnv(width, height, n_channels, start_pos)
+    env = GridEnv(grid_map, n_channels, start_pos)
     env.reset()
 
     model_type = input("Select type (DQN, PPO, A2C, NNA, load, test): ")
@@ -80,7 +64,12 @@ if __name__ == "__main__":
         models_dir = f"{model_dir}/{model_type}"
         model_path = f"{models_dir}/{load_steps}"
 
-        load_model(model_path, env)
+        load_model(model_path, env, model_type)
+    
+    if model_type == "NNA" or model_type == None or model_type == "":
+        render = True
+        nna = NNA(env, episodes, n_split, render)
+        nna.run()
 
     env.close()
 

@@ -29,6 +29,7 @@ def plot_results(model_types, grid_names, title='Learning Curve'):
     :param title: (str) the title of the task to plot
     """
     fig = plt.figure(title)
+    fig.set_size_inches(12, 5)
 
     for model_type, grid_name in zip(model_types, grid_names):
         log_folder = f"models/{grid_name}/{model_type}/"
@@ -42,11 +43,13 @@ def plot_results(model_types, grid_names, title='Learning Curve'):
     plt.ylabel('Rewards')
     plt.title(title)
     plt.legend()
+    plt.savefig(f'images/{title}.png')
     plt.show()
 
 if __name__ == '__main__':
-    grid_names = ["5x5", "5x5", "5x5"]
-    model_types = ["DQN", "PPO", "A2C"]
-    title = "3x3 Grid Learning Curve"
+    grid_name = "10x10"
+    title = f"{grid_name} Grid Learning Curve"
+    grid_names = [grid_name]
+    model_types = ["PPO"]
 
-    plot_results(model_types, grid_names)
+    plot_results(model_types, grid_names, title)

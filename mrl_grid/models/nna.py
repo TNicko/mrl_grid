@@ -16,7 +16,7 @@ class NNA(Env):
 
                 action = self.select_action(state)
                 
-                next_state, reward, done = self.env.step(action) # Take step in env
+                next_state, reward, done, info = self.env.step(action) # Take step in env
                 
                 state = next_state
                 episode_reward += reward
